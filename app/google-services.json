@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "1089198220755",
+    "firebase_url": "https://waiting-lounge.firebaseio.com",
+    "project_id": "waiting-lounge",
+    "storage_bucket": "waiting-lounge.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1089198220755:android:466e0100929572c3c33b26",
+        "android_client_info": {
+          "package_name": "com.nesh.waitinglounge"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1089198220755-odagk3qc4s97g87k1gdc87uj9nua87a6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBvPyHIn_ERcqQMoGGRY1QZDk7BtFHVo_o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1089198220755-odagk3qc4s97g87k1gdc87uj9nua87a6.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
