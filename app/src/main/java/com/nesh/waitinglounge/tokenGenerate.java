@@ -98,11 +98,12 @@ public class tokenGenerate extends AppCompatActivity {
         String currentTime=timeFormat.format(new Date());
         String currentDate=dateFormat.format(new Date());
         data.clear();
+        data.put("Email",email);
         data.put("Number",number);
         data.put("Date",currentDate);
         data.put("Time",currentTime);
         fs=FirebaseFirestore.getInstance();
-        fs.collection(pname).document(email).set(data);
+        fs.collection(pname).document(currentTime).set(data);
         //Toast.makeText(getApplicationContext(),"notification",Toast.LENGTH_LONG).show();
         NotificationChannel notificationChannel=new NotificationChannel("1","Order",NotificationManager.IMPORTANCE_DEFAULT);
         notificationChannel.enableLights(true);

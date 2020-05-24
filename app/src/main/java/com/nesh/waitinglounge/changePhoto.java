@@ -60,6 +60,14 @@ public class changePhoto extends AppCompatActivity {
     }
     public void updatePhoto(View view){
         pb.setVisibility(View.VISIBLE);
+        String deleteUrl=getIntent().getStringExtra("Url");
+        if(deleteUrl.isEmpty()){}
+        else{
+            FirebaseStorage fs=FirebaseStorage.getInstance();
+            StorageReference sr=fs.getReferenceFromUrl(deleteUrl);
+            sr.delete();
+
+        }
         final Map<String, Object> data=new HashMap<>();
         mAuth=FirebaseAuth.getInstance();
         fs=FirebaseFirestore.getInstance();

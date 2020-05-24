@@ -3,6 +3,7 @@ package com.nesh.waitinglounge;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -28,6 +29,7 @@ public class profile extends AppCompatActivity {
     TextView displayName,displayEmail,displayNumber,displayAddress;
     String name="",email="",url="",number="",address="";
     ImageView im;
+    SwipeRefreshLayout srl;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -38,6 +40,22 @@ public class profile extends AppCompatActivity {
         displayNumber=(TextView)findViewById(R.id.displayNumber);
         displayAddress=(TextView)findViewById(R.id.displayAddress);
         im=(ImageView)findViewById(R.id.displayPhoto);
+        srl=(SwipeRefreshLayout)findViewById(R.id.profileRefersh);
+        dataQuery();
+        srl.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                dataQuery();
+                srl.setRefreshing(false);
+            }
+        });
+    }
+    public void changeProfilePhoto(View view){
+        Intent in=new Intent(profile.this,changePhoto.class);
+        in.putExtra("Url",url);
+        startActivity(in);
+    }
+    public void dataQuery(){
         mAuth=FirebaseAuth.getInstance();
         fs=FirebaseFirestore.getInstance();
         String user=mAuth.getCurrentUser().getEmail();
@@ -91,9 +109,4 @@ public class profile extends AppCompatActivity {
                     }
                 });
     }
-    public void changeProfilePhoto(View view){
-        Intent in=new Intent(profile.this,changePhoto.class);
-        startActivity(in);
-    }
-
 }
