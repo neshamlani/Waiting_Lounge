@@ -65,7 +65,7 @@
             android:textSize="24sp" />
 
         <Button
-            android:id="@+id/button3"
+            android:id="@+id/tokenBtn"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
@@ -74,6 +74,14 @@
             android:text="Get Token"
             android:textColor="#FFFFFF"
             android:textSize="18sp" />
+
+        <Button
+            android:id="@+id/cancel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:onClick="cancelToken"
+            android:text="Cancel" />
 
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
