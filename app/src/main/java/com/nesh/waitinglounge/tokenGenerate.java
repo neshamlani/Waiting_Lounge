@@ -5,6 +5,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.NotificationCompat;
+import androidx.core.content.ContextCompat;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -15,17 +16,26 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.drawable.Icon;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.TextPaint;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.Toolbar;
 
+import com.github.amlcurran.showcaseview.ShowcaseView;
+import com.github.amlcurran.showcaseview.targets.ActionItemTarget;
+import com.github.amlcurran.showcaseview.targets.ViewTarget;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
@@ -42,6 +52,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.w3c.dom.Text;
 
+import java.lang.annotation.Target;
+import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -56,6 +68,8 @@ public class tokenGenerate extends AppCompatActivity {
     String pname,currentTime,val;
     Button btn,tBtn;
     SharedPreferences sp;
+    FirebaseAuth mAuth;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -102,7 +116,23 @@ public class tokenGenerate extends AppCompatActivity {
                         }
                     }
                 });
+        TextPaint tp=new TextPaint();
+        int color= ContextCompat.getColor(this,R.color.cardview_dark_background);
+        Paint paint=new Paint();
+        paint.setColor(color);
+        paint.setTextSize(50);
+        tp.set(paint);
+        com.github.amlcurran.showcaseview.targets.ViewTarget viewTarget= new ViewTarget(R.id.userNumber,this);
+        new ShowcaseView.Builder(this)
+                .setTarget(viewTarget)
+                .setContentTitle("Enter Number")
+                .setContentText("To Get Token")
+                .singleShot(3)
+                .setContentTextPaint(tp)
+                .setContentTitlePaint(tp)
+                .build();
     }
+
     @RequiresApi(api = Build.VERSION_CODES.O)
     public void generateToken(View view){
         String categories=getIntent().getStringExtra("categories");

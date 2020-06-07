@@ -2,10 +2,14 @@ package com.nesh.waitinglounge;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.os.Bundle;
+import android.text.TextPaint;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -15,6 +19,8 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import com.github.amlcurran.showcaseview.ShowcaseView;
+import com.github.amlcurran.showcaseview.targets.ViewTarget;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.Task;
@@ -108,5 +114,21 @@ public class home extends AppCompatActivity {
                 pull.setRefreshing(false);
             }
         });
+        TextPaint tp=new TextPaint();
+        int color= ContextCompat.getColor(this,R.color.cardview_dark_background);
+        Paint paint=new Paint();
+        paint.setColor(color);
+        paint.setTextSize(50);
+        tp.set(paint);
+        final com.github.amlcurran.showcaseview.targets.ViewTarget viewTarget= new ViewTarget(R.id.listServices,this);
+        new ShowcaseView.Builder(this)
+                .setTarget(viewTarget)
+                .setContentTitle("Select Categories Of Shop")
+                .setContentText("To View All The Related Services")
+                .singleShot(1)
+                .setContentTextPaint(tp)
+                .setContentTitlePaint(tp)
+                .build();
+
     }
 }
