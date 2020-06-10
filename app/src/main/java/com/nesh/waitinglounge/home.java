@@ -55,11 +55,14 @@ public class home extends AppCompatActivity {
                 mAuth=FirebaseAuth.getInstance();
                 mAuth.signOut();
                 finish();
-                return true;
+                break;
             case R.id.profile:
                 Intent in=new Intent(home.this,profile.class);
                 startActivity(in);
-                return true;
+                break;
+            case R.id.cancellation:
+                in=new Intent(home.this,cancelToken.class);
+                startActivity(in);
         }
         return true;
     }

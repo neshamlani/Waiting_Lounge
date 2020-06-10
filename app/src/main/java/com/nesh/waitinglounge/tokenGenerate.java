@@ -22,6 +22,7 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.text.TextPaint;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -63,13 +64,15 @@ import java.util.Locale;
 import java.util.Map;
 
 public class tokenGenerate extends AppCompatActivity {
-    TextView propertyName,ownersName,ownerNumber,userNumber;
+    TextView propertyName,ownersName,ownerNumber,userNumber,dispTimer;
     FirebaseFirestore fs;
     String pname,currentTime,val;
     Button btn,tBtn;
     SharedPreferences sp;
     FirebaseAuth mAuth;
-
+    CountDownTimer cdt;
+    int waitingTime;
+    long timeLeft=0;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -80,6 +83,8 @@ public class tokenGenerate extends AppCompatActivity {
         ownersName=(TextView)findViewById(R.id.ownersName);
         ownerNumber=(TextView)findViewById(R.id.ownerNumber);
         userNumber=(EditText)findViewById(R.id.userNumber);
+        dispTimer=(TextView)findViewById(R.id.dispTimer);
+        dispTimer.setVisibility(View.GONE);
         btn=(Button)findViewById(R.id.cancel);
         tBtn=(Button)findViewById(R.id.tokenBtn);
         btn.setVisibility(View.GONE);
@@ -103,6 +108,11 @@ public class tokenGenerate extends AppCompatActivity {
                                 try{
                                     String number=js.getString("Number");
                                     ownerNumber.setText("Owners Number:"+number);
+                                }catch (Exception e){
+                                    Toast.makeText(getApplicationContext(),e.getMessage(),Toast.LENGTH_LONG).show();
+                                }
+                                try{
+                                    waitingTime= Integer.parseInt(js.getString("Time"));
                                 }catch (Exception e){
                                     Toast.makeText(getApplicationContext(),e.getMessage(),Toast.LENGTH_LONG).show();
                                 }
@@ -141,7 +151,7 @@ public class tokenGenerate extends AppCompatActivity {
         final String email=mAuth.getCurrentUser().getEmail();
         fs=FirebaseFirestore.getInstance();
         String number=userNumber.getText().toString().trim();
-        SimpleDateFormat timeFormat=new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
+        final SimpleDateFormat timeFormat=new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
         SimpleDateFormat dateFormat=new SimpleDateFormat("dd:MM:yyyy", Locale.getDefault());
         currentTime=timeFormat.format(new Date());
         final String currentDate=dateFormat.format(new Date());
@@ -173,32 +183,51 @@ public class tokenGenerate extends AppCompatActivity {
                         }
                         else{
                             data.put("Token",i+1);
+                            data.put("Property_Name",pname);
                             fs.collection(pname).document(val).set(data);
+                            sp.edit().putString("Order",val).commit();
+                            sp.edit().putString("Property",pname).commit();
+                            Toast.makeText(getApplicationContext(),sp.getString("Order",null),Toast.LENGTH_LONG).show();
+                            //Toast.makeText(getApplicationContext(),"notification",Toast.LENGTH_LONG).show();
+                            NotificationChannel notificationChannel=new NotificationChannel("1","Order",NotificationManager.IMPORTANCE_DEFAULT);
+                            notificationChannel.enableLights(true);
+                            notificationChannel.enableVibration(true);
+                            notificationChannel.setLightColor(Color.GREEN);
+                            Intent in=new Intent(tokenGenerate.this,tokenGenerate.class);
+                            in.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                            PendingIntent pendingIntent=PendingIntent.getActivity(getApplicationContext(),1970,in,PendingIntent.FLAG_ONE_SHOT);
+                            Uri soundUri= RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+                            Notification.Builder notifyBuilder=new Notification.Builder(getApplicationContext(),"1")
+                                    .setSmallIcon(R.color.colorAccent)
+                                    .setContentTitle("Waiting List")
+                                    .setContentText(currentDate+" "+currentTime)
+                                    .setContentIntent(pendingIntent)
+                                    .setAutoCancel(false)
+                                    .setChannelId("1")
+                                    .setSound(soundUri);
+                            NotificationManager nm=(NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+                            nm.createNotificationChannel(notificationChannel);
+                            nm.notify(1970,notifyBuilder.build());
+                            i=i+1;
+                            final int wait=i*waitingTime*60*1000;
+                            dispTimer.setVisibility(View.VISIBLE);
+                            cdt=new CountDownTimer(wait,1000) {
+                                @Override
+                                public void onTick(long wait) {
+                                    timeLeft=wait;
+                                    updateTimer((int)wait/1000);
+                                }
+
+                                @Override
+                                public void onFinish() {
+
+                                }
+                            }.start();
+                            userNumber.setText(null);
                         }
                     }
                 });
-        sp.edit().putString("Order",val).commit();
-        Toast.makeText(getApplicationContext(),sp.getString("Order",null),Toast.LENGTH_LONG).show();
-        //Toast.makeText(getApplicationContext(),"notification",Toast.LENGTH_LONG).show();
-        NotificationChannel notificationChannel=new NotificationChannel("1","Order",NotificationManager.IMPORTANCE_DEFAULT);
-        notificationChannel.enableLights(true);
-        notificationChannel.enableVibration(true);
-        notificationChannel.setLightColor(Color.GREEN);
-        Intent in=new Intent(tokenGenerate.this,tokenGenerate.class);
-        in.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        PendingIntent pendingIntent=PendingIntent.getActivity(this,1970,in,PendingIntent.FLAG_ONE_SHOT);
-        Uri soundUri= RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-        Notification.Builder notifyBuilder=new Notification.Builder(this,"1")
-                .setSmallIcon(R.color.colorAccent)
-                .setContentTitle("Waiting List")
-                .setContentText(currentDate+" "+currentTime)
-                .setContentIntent(pendingIntent)
-                .setAutoCancel(false)
-                .setChannelId("1")
-                .setSound(soundUri);
-        NotificationManager nm=(NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
-        nm.createNotificationChannel(notificationChannel);
-        nm.notify(1970,notifyBuilder.build());
+
         tBtn.setEnabled(false);
         btn.setVisibility(View.VISIBLE);
         fs.collection(pname)
@@ -236,6 +265,9 @@ public class tokenGenerate extends AppCompatActivity {
                 });
     }
     public void cancelToken(View view){
+        cdt.cancel();
+        sp.edit().remove("timeleft").commit();
+        dispTimer.setVisibility(View.GONE);
         FirebaseAuth mAuth=FirebaseAuth.getInstance();
         final String email=mAuth.getCurrentUser().getEmail();
         fs.collection(pname).document(val).delete()
@@ -255,5 +287,41 @@ public class tokenGenerate extends AppCompatActivity {
             }
         });
     }
+    public void updateTimer(int timerValue){
+        int min=timerValue/60;
+        int sec=timerValue-(min*60);
+        String secString=Integer.toString(sec);
+        if(secString.equals("0")){
+            secString="00";
+        }
+        dispTimer.setText("Time left till your turn:  "+min+":"+secString);
+    }
 
+    @Override
+    protected void onStart() {
+        super.onStart();
+        timeLeft=sp.getLong("timeleft",0);
+        dispTimer.setVisibility(View.VISIBLE);
+        timeLeft=timeLeft-System.currentTimeMillis();
+        cdt=new CountDownTimer(timeLeft,1000) {
+            @Override
+            public void onTick(long wait) {
+                timeLeft=wait;
+                updateTimer((int)wait/1000);
+            }
+
+            @Override
+            public void onFinish() {
+
+            }
+        }.start();
+
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        timeLeft=timeLeft+System.currentTimeMillis();
+        sp.edit().putLong("timeleft",timeLeft).commit();
+    }
 }
