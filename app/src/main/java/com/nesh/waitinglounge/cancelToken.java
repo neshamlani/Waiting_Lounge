@@ -74,6 +74,8 @@ public class cancelToken extends AppCompatActivity {
                     tokenDetails.setText(null);
                     placeName.setText(null);
                     sp.edit().remove("timeleft").commit();
+                    sp.edit().remove("Order").commit();
+                    sp.edit().remove("Property").commit();
                 }
             }
         });

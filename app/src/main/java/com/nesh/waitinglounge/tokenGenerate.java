@@ -24,6 +24,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.text.TextPaint;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -48,6 +49,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.SetOptions;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -71,7 +73,7 @@ public class tokenGenerate extends AppCompatActivity {
     SharedPreferences sp;
     FirebaseAuth mAuth;
     CountDownTimer cdt;
-    int waitingTime;
+    int waitingTime,cancelSucess=0,wait;
     long timeLeft=0;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -162,55 +164,24 @@ public class tokenGenerate extends AppCompatActivity {
         data.put("Date",currentDate);
         data.put("Time",currentTime);
         val=currentTime+email;
-        fs=FirebaseFirestore.getInstance();
-        fs.collection(pname).get()
-                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-                    @Override
-                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                        int i=0,flag=0;
-                        for(QueryDocumentSnapshot post:task.getResult()){
-                            if(post.exists()) {
+        if(order==null){
+            fs=FirebaseFirestore.getInstance();
+            fs.collection(pname).get()
+                    .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                        @Override
+                        public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                            int i;
+                            i=0;
+                            for(DocumentSnapshot post:task.getResult()){
                                 i++;
-                                if(order.equals(post.getId())){
-                                    sp.edit().putString("Order",post.getId()).commit();
-                                    flag=1;
-                                }
                             }
-                        }
-                        if(flag==1){
-                            Toast.makeText(getApplicationContext(),"Cannot get token twice",Toast.LENGTH_LONG).show();
-                            finish();
-                        }
-                        else{
+                            Toast.makeText(getApplicationContext(),Integer.toString(i),Toast.LENGTH_LONG).show();
                             data.put("Token",i+1);
-                            data.put("Property_Name",pname);
-                            fs.collection(pname).document(val).set(data);
-                            sp.edit().putString("Order",val).commit();
-                            sp.edit().putString("Property",pname).commit();
-                            Toast.makeText(getApplicationContext(),sp.getString("Order",null),Toast.LENGTH_LONG).show();
-                            //Toast.makeText(getApplicationContext(),"notification",Toast.LENGTH_LONG).show();
-                            NotificationChannel notificationChannel=new NotificationChannel("1","Order",NotificationManager.IMPORTANCE_DEFAULT);
-                            notificationChannel.enableLights(true);
-                            notificationChannel.enableVibration(true);
-                            notificationChannel.setLightColor(Color.GREEN);
-                            Intent in=new Intent(tokenGenerate.this,tokenGenerate.class);
-                            in.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                            PendingIntent pendingIntent=PendingIntent.getActivity(getApplicationContext(),1970,in,PendingIntent.FLAG_ONE_SHOT);
-                            Uri soundUri= RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-                            Notification.Builder notifyBuilder=new Notification.Builder(getApplicationContext(),"1")
-                                    .setSmallIcon(R.color.colorAccent)
-                                    .setContentTitle("Waiting List")
-                                    .setContentText(currentDate+" "+currentTime)
-                                    .setContentIntent(pendingIntent)
-                                    .setAutoCancel(false)
-                                    .setChannelId("1")
-                                    .setSound(soundUri);
-                            NotificationManager nm=(NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
-                            nm.createNotificationChannel(notificationChannel);
-                            nm.notify(1970,notifyBuilder.build());
                             i=i+1;
-                            final int wait=i*waitingTime*60*1000;
-                            dispTimer.setVisibility(View.VISIBLE);
+                            wait=i*waitingTime*60*1000;
+                            data.put("Property_Name",pname);
+                            fs=FirebaseFirestore.getInstance();
+                            fs.collection(pname).document(val).set(data);
                             cdt=new CountDownTimer(wait,1000) {
                                 @Override
                                 public void onTick(long wait) {
@@ -223,13 +194,43 @@ public class tokenGenerate extends AppCompatActivity {
 
                                 }
                             }.start();
-                            userNumber.setText(null);
                         }
-                    }
-                });
+                    });
 
-        tBtn.setEnabled(false);
-        btn.setVisibility(View.VISIBLE);
+
+            sp.edit().putString("Order",val).commit();
+            sp.edit().putString("Property",pname).commit();
+            Toast.makeText(getApplicationContext(),sp.getString("Order",null),Toast.LENGTH_LONG).show();
+            //Toast.makeText(getApplicationContext(),"notification",Toast.LENGTH_LONG).show();
+            NotificationChannel notificationChannel=new NotificationChannel("1","Order",NotificationManager.IMPORTANCE_DEFAULT);
+            notificationChannel.enableLights(true);
+            notificationChannel.enableVibration(true);
+            notificationChannel.setLightColor(Color.GREEN);
+            Intent in=new Intent(tokenGenerate.this,tokenGenerate.class);
+            in.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            PendingIntent pendingIntent=PendingIntent.getActivity(getApplicationContext(),1970,in,PendingIntent.FLAG_ONE_SHOT);
+            Uri soundUri= RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+            Notification.Builder notifyBuilder=new Notification.Builder(getApplicationContext(),"1")
+                    .setSmallIcon(R.color.colorAccent)
+                    .setContentTitle("Waiting List")
+                    .setContentText(currentDate+" "+currentTime)
+                    .setContentIntent(pendingIntent)
+                    .setAutoCancel(false)
+                    .setChannelId("1")
+                    .setSound(soundUri);
+            NotificationManager nm=(NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+            nm.createNotificationChannel(notificationChannel);
+            nm.notify(1970,notifyBuilder.build());
+            dispTimer.setVisibility(View.VISIBLE);
+
+            userNumber.setText(null);
+            tBtn.setEnabled(false);
+            btn.setVisibility(View.VISIBLE);
+        }
+        else{
+            Toast.makeText(getApplicationContext(),"Cannot get token twice",Toast.LENGTH_LONG).show();
+            finish();
+        }
         fs.collection(pname)
                 .addSnapshotListener(new EventListener<QuerySnapshot>() {
                     @Override
@@ -267,6 +268,8 @@ public class tokenGenerate extends AppCompatActivity {
     public void cancelToken(View view){
         cdt.cancel();
         sp.edit().remove("timeleft").commit();
+        sp.edit().remove("Order").commit();
+        sp.edit().remove("Property").commit();
         dispTimer.setVisibility(View.GONE);
         FirebaseAuth mAuth=FirebaseAuth.getInstance();
         final String email=mAuth.getCurrentUser().getEmail();
@@ -276,8 +279,22 @@ public class tokenGenerate extends AppCompatActivity {
             public void onComplete(@NonNull Task<Void> task) {
                 if(task.isSuccessful()){
                     Toast.makeText(getApplicationContext(),"Cancel Successful",Toast.LENGTH_LONG).show();
+                    fs.collection(pname).get()
+                            .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                                @Override
+                                public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                                    int i=0;
+                                    for(QueryDocumentSnapshot post:task.getResult()){
+                                        i++;
+                                        Map<String, Object> data = new HashMap<>();
+                                        data.put("Token", i);
+                                        fs.collection(pname).document(post.getId()).set(data, SetOptions.merge());
+                                    }
+                                }
+                            });
                     btn.setVisibility(View.GONE);
                     tBtn.setEnabled(true);
+                    cancelSucess=1;
                 }
                 else{
                     Toast.makeText(getApplicationContext(),task.getException().getMessage(),Toast.LENGTH_LONG).show();
@@ -321,7 +338,9 @@ public class tokenGenerate extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        timeLeft=timeLeft+System.currentTimeMillis();
-        sp.edit().putLong("timeleft",timeLeft).commit();
+        if(cancelSucess==0) {
+            timeLeft = timeLeft + System.currentTimeMillis();
+            sp.edit().putLong("timeleft", timeLeft).commit();
+        }
     }
 }
