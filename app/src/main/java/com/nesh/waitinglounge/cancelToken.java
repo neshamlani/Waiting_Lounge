@@ -34,33 +34,34 @@ public class cancelToken extends AppCompatActivity {
         order=sp.getString("Order",null);
         property=sp.getString("Property",null);
         fs=FirebaseFirestore.getInstance();
-        fs.collection(property).document(order).get()
-                .addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
-                    @Override
-                    public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+        if(order!=null) {
+            fs.collection(property).document(order).get()
+                    .addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+                        @Override
+                        public void onComplete(@NonNull Task<DocumentSnapshot> task) {
 
-                        if(task.isSuccessful()){
-                            DocumentSnapshot post=task.getResult();
-                            if(post.exists()) {
-                                JSONObject js = new JSONObject(post.getData());
-                                try {
-                                    details = "Email-"+js.getString("Email")
-                                            + "\n" +"Date-"+ js.getString("Date")
-                                            + "\n" +"Time-"+ js.getString("Time")
-                                            + "\n" +"Token Number-"+ js.getString("Token");
-                                    tokenDetails.setText(details);
-                                    placeName.setText(property);
-                                } catch (Exception e) {
-                                    Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_LONG).show();
+                            if (task.isSuccessful()) {
+                                DocumentSnapshot post = task.getResult();
+                                if (post.exists()) {
+                                    JSONObject js = new JSONObject(post.getData());
+                                    try {
+                                        details = "Email-" + js.getString("Email")
+                                                + "\n" + "Date-" + js.getString("Date")
+                                                + "\n" + "Time-" + js.getString("Time")
+                                                + "\n" + "Token Number-" + js.getString("Token");
+                                        tokenDetails.setText(details);
+                                        placeName.setText("Name:"+property);
+                                    } catch (Exception e) {
+                                        Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_LONG).show();
+                                    }
+                                } else {
+                                    Toast.makeText(getApplicationContext(), "No Token Available", Toast.LENGTH_LONG).show();
                                 }
-                            }else{
-                                Toast.makeText(getApplicationContext(),"No Token Available",Toast.LENGTH_LONG).show();
                             }
+
                         }
-
-                    }
-                });
-
+                    });
+        }
     }
 
     public void cancelTokenByUser(View view){

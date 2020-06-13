@@ -47,6 +47,8 @@ import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.ListenerRegistration;
+import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.SetOptions;
@@ -75,6 +77,7 @@ public class tokenGenerate extends AppCompatActivity {
     CountDownTimer cdt;
     int waitingTime,cancelSucess=0,wait;
     long timeLeft=0;
+    ListenerRegistration registration;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -212,8 +215,8 @@ public class tokenGenerate extends AppCompatActivity {
             Uri soundUri= RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
             Notification.Builder notifyBuilder=new Notification.Builder(getApplicationContext(),"1")
                     .setSmallIcon(R.color.colorAccent)
-                    .setContentTitle("Waiting List")
-                    .setContentText(currentDate+" "+currentTime)
+                    .setContentTitle("Your Token")
+                    .setContentText("Date:"+currentDate+" Time:"+currentTime)
                     .setContentIntent(pendingIntent)
                     .setAutoCancel(false)
                     .setChannelId("1")
@@ -231,8 +234,8 @@ public class tokenGenerate extends AppCompatActivity {
             Toast.makeText(getApplicationContext(),"Cannot get token twice",Toast.LENGTH_LONG).show();
             finish();
         }
-        fs.collection(pname)
-                .addSnapshotListener(new EventListener<QuerySnapshot>() {
+        Query q=fs.collection(pname);
+        registration=q.addSnapshotListener(new EventListener<QuerySnapshot>() {
                     @Override
                     public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots,
                                         @Nullable FirebaseFirestoreException e) {
@@ -250,7 +253,7 @@ public class tokenGenerate extends AppCompatActivity {
                                     Uri soundUri= RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
                                     Notification.Builder notifyBuilder=new Notification.Builder(getApplicationContext(),"2")
                                             .setSmallIcon(R.color.colorAccent)
-                                            .setContentTitle("Waiting List")
+                                            .setContentTitle("Someone Left")
                                             .setContentText(removed)
                                             .setContentIntent(pendingIntent)
                                             .setAutoCancel(false)
@@ -342,5 +345,6 @@ public class tokenGenerate extends AppCompatActivity {
             timeLeft = timeLeft + System.currentTimeMillis();
             sp.edit().putLong("timeleft", timeLeft).commit();
         }
+        registration.remove();
     }
 }

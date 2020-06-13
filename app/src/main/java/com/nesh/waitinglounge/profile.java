@@ -109,4 +109,10 @@ public class profile extends AppCompatActivity {
                     }
                 });
     }
+    public void editProfile(View view){
+        Intent in=new Intent(profile.this,changeProfile.class);
+        in.putExtra("Url",url);
+        startActivity(in);
+        finish();
+    }
 }
