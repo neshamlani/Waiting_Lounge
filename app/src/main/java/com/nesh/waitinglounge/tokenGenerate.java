@@ -40,7 +40,10 @@ import com.github.amlcurran.showcaseview.targets.ActionItemTarget;
 import com.github.amlcurran.showcaseview.targets.ViewTarget;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.FirebaseException;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.PhoneAuthCredential;
+import com.google.firebase.auth.PhoneAuthProvider;
 import com.google.firebase.firestore.DocumentChange;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
@@ -66,6 +69,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public class tokenGenerate extends AppCompatActivity {
     TextView propertyName,ownersName,ownerNumber,userNumber,dispTimer;
@@ -146,16 +150,170 @@ public class tokenGenerate extends AppCompatActivity {
                 .setContentTextPaint(tp)
                 .setContentTitlePaint(tp)
                 .build();
+        String shop=getIntent().getStringExtra("shop");
+        Query q=fs.collection(shop);
+        registration=q.addSnapshotListener(new EventListener<QuerySnapshot>() {
+            @RequiresApi(api = Build.VERSION_CODES.O)
+            @Override
+            public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots,
+                                @Nullable FirebaseFirestoreException e) {
+                for(DocumentChange dc:queryDocumentSnapshots.getDocumentChanges()){
+                    switch (dc.getType()){
+                        case REMOVED:
+                            cdt.cancel();
+                            fs.collection(pname).get()
+                                    .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                                        @Override
+                                        public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                                            int i=0;
+                                            for(QueryDocumentSnapshot post:task.getResult()){
+                                                i++;
+                                            }
+                                            wait=i*waitingTime*60*1000;
+                                            cdt=new CountDownTimer(wait,1000) {
+                                                @Override
+                                                public void onTick(long wait) {
+                                                    timeLeft=wait;
+                                                    updateTimer((int)wait/1000);
+                                                }
+
+                                                @Override
+                                                public void onFinish() {
+
+                                                }
+                                            }.start();
+                                        }
+                                    });
+                            String removed=dc.getDocument().getId();
+                            NotificationChannel notificationChannel=new NotificationChannel("2","Order",NotificationManager.IMPORTANCE_DEFAULT);
+                            notificationChannel.enableLights(true);
+                            notificationChannel.enableVibration(true);
+                            notificationChannel.setLightColor(Color.GREEN);
+                            Intent in=new Intent(getApplicationContext(),cancelToken.class);
+                            in.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                            PendingIntent pendingIntent=PendingIntent.getActivity(getApplicationContext(),1971,in,PendingIntent.FLAG_ONE_SHOT);
+                            Uri soundUri= RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+                            Notification.Builder notifyBuilder=new Notification.Builder(getApplicationContext(),"2")
+                                    .setSmallIcon(R.color.colorAccent)
+                                    .setContentTitle("Someone Left")
+                                    .setContentText(removed)
+                                    .setContentIntent(pendingIntent)
+                                    .setAutoCancel(false)
+                                    .setChannelId("2")
+                                    .setSound(soundUri);
+                            NotificationManager nm=(NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+                            nm.createNotificationChannel(notificationChannel);
+                            nm.notify(1971,notifyBuilder.build());
+                            break;
+                    }
+                }
+            }
+        });
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
     public void generateToken(View view){
-        String categories=getIntent().getStringExtra("categories");
+        Toast.makeText(getApplicationContext(),"Verifying Number By OTP",Toast.LENGTH_LONG).show();
         FirebaseAuth mAuth=FirebaseAuth.getInstance();
         final Map<String, Object> data=new HashMap<>();
         final String email=mAuth.getCurrentUser().getEmail();
         fs=FirebaseFirestore.getInstance();
-        String number=userNumber.getText().toString().trim();
+        final String number=userNumber.getText().toString().trim();
+        PhoneAuthProvider.OnVerificationStateChangedCallbacks mCallback;
+        /*mCallback=new PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
+            @Override
+            public void onVerificationCompleted(@NonNull PhoneAuthCredential phoneAuthCredential) {
+                final SimpleDateFormat timeFormat=new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
+                SimpleDateFormat dateFormat=new SimpleDateFormat("dd:MM:yyyy", Locale.getDefault());
+                currentTime=timeFormat.format(new Date());
+                final String currentDate=dateFormat.format(new Date());
+                final String order=sp.getString("Order",null);
+                data.clear();
+                data.put("Number",number);
+                data.put("Email",email);
+                data.put("Date",currentDate);
+                data.put("Time",currentTime);
+                val=currentTime+email;
+                if(order==null){
+                    fs=FirebaseFirestore.getInstance();
+                    fs.collection(pname).get()
+                            .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                                @Override
+                                public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                                    int i;
+                                    i=0;
+                                    for(DocumentSnapshot post:task.getResult()){
+                                        i++;
+                                    }
+                                    Toast.makeText(getApplicationContext(),Integer.toString(i),Toast.LENGTH_LONG).show();
+                                    data.put("Token",i+1);
+                                    i=i+1;
+                                    wait=i*waitingTime*60*1000;
+                                    data.put("Property_Name",pname);
+                                    fs=FirebaseFirestore.getInstance();
+                                    fs.collection(pname).document(val).set(data);
+                                    cdt=new CountDownTimer(wait,1000) {
+                                        @Override
+                                        public void onTick(long wait) {
+                                            timeLeft=wait;
+                                            updateTimer((int)wait/1000);
+                                        }
+
+                                        @Override
+                                        public void onFinish() {
+
+                                        }
+                                    }.start();
+                                }
+                            });
+
+
+                    sp.edit().putString("Order",val).commit();
+                    sp.edit().putString("Property",pname).commit();
+                    Toast.makeText(getApplicationContext(),sp.getString("Order",null),Toast.LENGTH_LONG).show();
+                    //Toast.makeText(getApplicationContext(),"notification",Toast.LENGTH_LONG).show();
+                    NotificationChannel notificationChannel=new NotificationChannel("1","Order",NotificationManager.IMPORTANCE_DEFAULT);
+                    notificationChannel.enableLights(true);
+                    notificationChannel.enableVibration(true);
+                    notificationChannel.setLightColor(Color.GREEN);
+                    Intent in=new Intent(getApplicationContext(),cancelToken.class);
+                    in.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                    PendingIntent pendingIntent=PendingIntent.getActivity(getApplicationContext(),1970,in,PendingIntent.FLAG_ONE_SHOT);
+                    Uri soundUri= RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+                    Notification.Builder notifyBuilder=new Notification.Builder(getApplicationContext(),"1")
+                            .setSmallIcon(R.color.colorAccent)
+                            .setContentTitle("Your Token")
+                            .setContentText("Date:"+currentDate+" Time:"+currentTime)
+                            .setContentIntent(pendingIntent)
+                            .setAutoCancel(false)
+                            .setChannelId("1")
+                            .setSound(soundUri);
+                    NotificationManager nm=(NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+                    nm.createNotificationChannel(notificationChannel);
+                    nm.notify(1970,notifyBuilder.build());
+                    dispTimer.setVisibility(View.VISIBLE);
+                    userNumber.setText(null);
+                    tBtn.setEnabled(false);
+                    btn.setVisibility(View.VISIBLE);
+                }
+                else{
+                    Toast.makeText(getApplicationContext(),"Cannot get token twice",Toast.LENGTH_LONG).show();
+                    finish();
+                }
+            }
+
+            @Override
+            public void onVerificationFailed(@NonNull FirebaseException e) {
+                Toast.makeText(getApplicationContext(),e.getMessage(),Toast.LENGTH_LONG).show();
+            }
+        };
+        PhoneAuthProvider.getInstance().verifyPhoneNumber(
+                "+91"+number,
+                60,
+                TimeUnit.SECONDS,
+                tokenGenerate.this,
+                mCallback
+        );*/
         final SimpleDateFormat timeFormat=new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
         SimpleDateFormat dateFormat=new SimpleDateFormat("dd:MM:yyyy", Locale.getDefault());
         currentTime=timeFormat.format(new Date());
@@ -167,29 +325,29 @@ public class tokenGenerate extends AppCompatActivity {
         data.put("Date",currentDate);
         data.put("Time",currentTime);
         val=currentTime+email;
-        if(order==null){
-            fs=FirebaseFirestore.getInstance();
+        if(order==null) {
+            fs = FirebaseFirestore.getInstance();
             fs.collection(pname).get()
                     .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
                         @Override
                         public void onComplete(@NonNull Task<QuerySnapshot> task) {
                             int i;
-                            i=0;
-                            for(DocumentSnapshot post:task.getResult()){
+                            i = 0;
+                            for (DocumentSnapshot post : task.getResult()) {
                                 i++;
                             }
-                            Toast.makeText(getApplicationContext(),Integer.toString(i),Toast.LENGTH_LONG).show();
-                            data.put("Token",i+1);
-                            i=i+1;
-                            wait=i*waitingTime*60*1000;
-                            data.put("Property_Name",pname);
-                            fs=FirebaseFirestore.getInstance();
+                            Toast.makeText(getApplicationContext(), Integer.toString(i), Toast.LENGTH_LONG).show();
+                            data.put("Token", i + 1);
+                            i = i + 1;
+                            wait = i * waitingTime * 60 * 1000;
+                            data.put("Property_Name", pname);
+                            fs = FirebaseFirestore.getInstance();
                             fs.collection(pname).document(val).set(data);
-                            cdt=new CountDownTimer(wait,1000) {
+                            cdt = new CountDownTimer(wait, 1000) {
                                 @Override
                                 public void onTick(long wait) {
-                                    timeLeft=wait;
-                                    updateTimer((int)wait/1000);
+                                    timeLeft = wait;
+                                    updateTimer((int) wait / 1000);
                                 }
 
                                 @Override
@@ -201,72 +359,34 @@ public class tokenGenerate extends AppCompatActivity {
                     });
 
 
-            sp.edit().putString("Order",val).commit();
-            sp.edit().putString("Property",pname).commit();
-            Toast.makeText(getApplicationContext(),sp.getString("Order",null),Toast.LENGTH_LONG).show();
+            sp.edit().putString("Order", val).commit();
+            sp.edit().putString("Property", pname).commit();
+            Toast.makeText(getApplicationContext(), sp.getString("Order", null), Toast.LENGTH_LONG).show();
             //Toast.makeText(getApplicationContext(),"notification",Toast.LENGTH_LONG).show();
-            NotificationChannel notificationChannel=new NotificationChannel("1","Order",NotificationManager.IMPORTANCE_DEFAULT);
+            NotificationChannel notificationChannel = new NotificationChannel("1", "Order", NotificationManager.IMPORTANCE_DEFAULT);
             notificationChannel.enableLights(true);
             notificationChannel.enableVibration(true);
             notificationChannel.setLightColor(Color.GREEN);
-            Intent in=new Intent(tokenGenerate.this,tokenGenerate.class);
+            Intent in = new Intent(getApplicationContext(), cancelToken.class);
             in.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-            PendingIntent pendingIntent=PendingIntent.getActivity(getApplicationContext(),1970,in,PendingIntent.FLAG_ONE_SHOT);
-            Uri soundUri= RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-            Notification.Builder notifyBuilder=new Notification.Builder(getApplicationContext(),"1")
+            PendingIntent pendingIntent = PendingIntent.getActivity(getApplicationContext(), 1970, in, PendingIntent.FLAG_ONE_SHOT);
+            Uri soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+            Notification.Builder notifyBuilder = new Notification.Builder(getApplicationContext(), "1")
                     .setSmallIcon(R.color.colorAccent)
                     .setContentTitle("Your Token")
-                    .setContentText("Date:"+currentDate+" Time:"+currentTime)
+                    .setContentText("Date:" + currentDate + " Time:" + currentTime)
                     .setContentIntent(pendingIntent)
                     .setAutoCancel(false)
                     .setChannelId("1")
                     .setSound(soundUri);
-            NotificationManager nm=(NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+            NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             nm.createNotificationChannel(notificationChannel);
-            nm.notify(1970,notifyBuilder.build());
+            nm.notify(1970, notifyBuilder.build());
             dispTimer.setVisibility(View.VISIBLE);
-
             userNumber.setText(null);
             tBtn.setEnabled(false);
             btn.setVisibility(View.VISIBLE);
         }
-        else{
-            Toast.makeText(getApplicationContext(),"Cannot get token twice",Toast.LENGTH_LONG).show();
-            finish();
-        }
-        Query q=fs.collection(pname);
-        registration=q.addSnapshotListener(new EventListener<QuerySnapshot>() {
-                    @Override
-                    public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots,
-                                        @Nullable FirebaseFirestoreException e) {
-                        for(DocumentChange dc:queryDocumentSnapshots.getDocumentChanges()){
-                            switch (dc.getType()){
-                                case REMOVED:
-                                    String removed=dc.getDocument().getId();
-                                    NotificationChannel notificationChannel=new NotificationChannel("2","Order",NotificationManager.IMPORTANCE_DEFAULT);
-                                    notificationChannel.enableLights(true);
-                                    notificationChannel.enableVibration(true);
-                                    notificationChannel.setLightColor(Color.GREEN);
-                                    Intent in=new Intent(tokenGenerate.this,tokenGenerate.class);
-                                    in.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                                    PendingIntent pendingIntent=PendingIntent.getActivity(getApplicationContext(),1971,in,PendingIntent.FLAG_ONE_SHOT);
-                                    Uri soundUri= RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-                                    Notification.Builder notifyBuilder=new Notification.Builder(getApplicationContext(),"2")
-                                            .setSmallIcon(R.color.colorAccent)
-                                            .setContentTitle("Someone Left")
-                                            .setContentText(removed)
-                                            .setContentIntent(pendingIntent)
-                                            .setAutoCancel(false)
-                                            .setChannelId("2")
-                                            .setSound(soundUri);
-                                    NotificationManager nm=(NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
-                                    nm.createNotificationChannel(notificationChannel);
-                                    nm.notify(1971,notifyBuilder.build());
-                                    break;
-                            }
-                        }
-                    }
-                });
     }
     public void cancelToken(View view){
         cdt.cancel();
@@ -342,9 +462,9 @@ public class tokenGenerate extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         if(cancelSucess==0) {
+            cdt.cancel();
             timeLeft = timeLeft + System.currentTimeMillis();
             sp.edit().putLong("timeleft", timeLeft).commit();
         }
-        registration.remove();
     }
 }

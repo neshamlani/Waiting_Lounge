@@ -67,6 +67,11 @@ public class home extends AppCompatActivity {
             case R.id.cancellation:
                 in=new Intent(home.this,cancelToken.class);
                 startActivity(in);
+                break;
+            case R.id.aboutDev:
+                in=new Intent(home.this,aboutus.class);
+                startActivity(in);
+                break;
         }
         return true;
     }
@@ -136,7 +141,7 @@ public class home extends AppCompatActivity {
                 pull.setRefreshing(false);
             }
         });
-        TextPaint tp=new TextPaint();
+        final TextPaint tp=new TextPaint();
         int color= ContextCompat.getColor(this,R.color.cardview_dark_background);
         Paint paint=new Paint();
         paint.setColor(color);

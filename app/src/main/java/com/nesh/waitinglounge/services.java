@@ -90,7 +90,7 @@ public class services extends AppCompatActivity {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 Intent in=new Intent(services.this,tokenGenerate.class);
                 in.putExtra("email",emails.get(position));
-                in.putExtra("categories",categories);
+                in.putExtra("shop",cat.get(position));
                 startActivity(in);
             }
         });

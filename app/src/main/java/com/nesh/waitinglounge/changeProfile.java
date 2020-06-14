@@ -41,7 +41,7 @@ public class changeProfile extends AppCompatActivity {
         mAuth=FirebaseAuth.getInstance();
         fs=FirebaseFirestore.getInstance();
         user=mAuth.getCurrentUser().getEmail();
-        fs.collection("Users_Client").document(user)
+        fs.collection("Users_Clients").document(user)
                 .get()
                 .addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
                     @Override
@@ -52,23 +52,23 @@ public class changeProfile extends AppCompatActivity {
                                 JSONObject js=new JSONObject(post.getData());
                                 try {
                                     name = js.getString("Name");
+                                    editname.setText(name);
                                 }catch (Exception e){
                                     Toast.makeText(getApplicationContext(),e.getMessage(),Toast.LENGTH_SHORT).show();
                                 }
                                 try{
                                     number=js.getString("Number");
+                                    editNumber.setText(number);
                                 }catch (Exception e){
                                     Toast.makeText(getApplicationContext(),e.getMessage(),Toast.LENGTH_SHORT).show();
                                 }
                                 try{
                                     address=js.getString("Address");
+                                    editAddress.setText(address);
                                 }catch (Exception e){
                                     Toast.makeText(getApplicationContext(),e.getMessage(),Toast.LENGTH_SHORT).show();
                                 }
                             }
-                            editname.setText(name);
-                            editNumber.setText(number);
-                            editAddress.setText(address);
                         }
                         else{
                             Toast.makeText(getApplicationContext(),task.getException().toString(),Toast.LENGTH_SHORT).show();
@@ -94,7 +94,7 @@ public class changeProfile extends AppCompatActivity {
             data.put("Address",address);
             fs=FirebaseFirestore.getInstance();
             user=mAuth.getCurrentUser().getEmail();
-                fs.collection("Users_Cust").document(user).set(data, SetOptions.merge())
+                fs.collection("Users_Clients").document(user).set(data, SetOptions.merge())
                         .addOnCompleteListener(new OnCompleteListener<Void>() {
                             @Override
                             public void onComplete(@NonNull Task<Void> task) {
