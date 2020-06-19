@@ -12,7 +12,10 @@ import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.FirebaseException;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.PhoneAuthCredential;
+import com.google.firebase.auth.PhoneAuthProvider;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.SetOptions;
@@ -22,6 +25,7 @@ import org.json.JSONObject;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public class changeProfile extends AppCompatActivity {
     EditText editname,editNumber,editAddress;
@@ -87,31 +91,49 @@ public class changeProfile extends AppCompatActivity {
         }
         else {
             fs=FirebaseFirestore.getInstance();
-            Map<String, Object> data=new HashMap<>();
+            final Map<String, Object> data=new HashMap<>();
             data.clear();
             data.put("Name",name);
             data.put("Number",number);
             data.put("Address",address);
-            fs=FirebaseFirestore.getInstance();
-            user=mAuth.getCurrentUser().getEmail();
-                fs.collection("Users_Clients").document(user).set(data, SetOptions.merge())
-                        .addOnCompleteListener(new OnCompleteListener<Void>() {
-                            @Override
-                            public void onComplete(@NonNull Task<Void> task) {
-                                if(task.isSuccessful()){
-                                    Toast.makeText(getApplicationContext(),"Data Update",Toast.LENGTH_LONG).show();
-                                    pb.setVisibility(View.GONE);
-                                    Intent in=new Intent(changeProfile.this,profile.class);
-                                    startActivity(in);
-                                    finish();
+            PhoneAuthProvider.OnVerificationStateChangedCallbacks mCallback;
+            mCallback=new PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
+                @Override
+                public void onVerificationCompleted(@NonNull PhoneAuthCredential phoneAuthCredential) {
+                    fs=FirebaseFirestore.getInstance();
+                    user=mAuth.getCurrentUser().getEmail();
+                    fs.collection("Users_Clients").document(user).set(data, SetOptions.merge())
+                            .addOnCompleteListener(new OnCompleteListener<Void>() {
+                                @Override
+                                public void onComplete(@NonNull Task<Void> task) {
+                                    if(task.isSuccessful()){
+                                        Toast.makeText(getApplicationContext(),"Data Update",Toast.LENGTH_LONG).show();
+                                        pb.setVisibility(View.GONE);
+                                        Intent in=new Intent(changeProfile.this,profile.class);
+                                        startActivity(in);
+                                        finish();
+                                    }
+                                    else{
+                                        Toast.makeText(getApplicationContext(),task.getException().getMessage(),Toast.LENGTH_LONG).show();
+                                        pb.setVisibility(View.GONE);
+                                    }
                                 }
-                                else{
-                                    Toast.makeText(getApplicationContext(),task.getException().getMessage(),Toast.LENGTH_LONG).show();
-                                    pb.setVisibility(View.GONE);
-                                }
-                            }
-                        });
+                            });
 
+                }
+
+                @Override
+                public void onVerificationFailed(@NonNull FirebaseException e) {
+                    Toast.makeText(getApplicationContext(),e.getMessage(),Toast.LENGTH_LONG).show();
+                }
+            };
+            PhoneAuthProvider.getInstance().verifyPhoneNumber(
+                    "+91"+number,
+                    60,
+                    TimeUnit.SECONDS,
+                    changeProfile.this,
+                    mCallback
+            );
         }
     }
 }
