@@ -7,7 +7,9 @@ import androidx.core.content.ContextCompat;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -29,9 +31,13 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,6 +49,7 @@ public class home extends AppCompatActivity {
     ArrayAdapter<String> categoriesAdapater;
     FirebaseFirestore fs;
     SwipeRefreshLayout pull;
+    SharedPreferences sp;
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         super.onCreateOptionsMenu(menu);
@@ -64,12 +71,13 @@ public class home extends AppCompatActivity {
                 Intent in=new Intent(home.this,profile.class);
                 startActivity(in);
                 break;
-            case R.id.cancellation:
-                in=new Intent(home.this,cancelToken.class);
-                startActivity(in);
-                break;
             case R.id.aboutDev:
                 in=new Intent(home.this,aboutus.class);
+                startActivity(in);
+                break;
+
+            case R.id.termsandconditions:
+                in=new Intent(home.this,termsandconditions.class);
                 startActivity(in);
                 break;
         }
@@ -96,13 +104,11 @@ public class home extends AppCompatActivity {
             ActivityCompat.requestPermissions(this,new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},2);
         }
         listView = (ListView) findViewById(R.id.listServices);
-        pull=(SwipeRefreshLayout)findViewById(R.id.pullRefresh);
+        //pull=(SwipeRefreshLayout)findViewById(R.id.pullRefresh);
         categories=new ArrayList<String>();
         categories.clear();
         categories.add("Hotel");
         categories.add("Barber");
-        categories.add("Clinic");
-        categories.add("Dentist");
         categoriesAdapater = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, categories);
         listView.setAdapter(categoriesAdapater);
         fs=FirebaseFirestore.getInstance();
@@ -115,7 +121,7 @@ public class home extends AppCompatActivity {
                 startActivity(in);
             }
         });
-        pull.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+        /*pull.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
                 pull.setRefreshing(true);
@@ -140,7 +146,7 @@ public class home extends AppCompatActivity {
                         });
                 pull.setRefreshing(false);
             }
-        });
+        });*/
         final TextPaint tp=new TextPaint();
         int color= ContextCompat.getColor(this,R.color.cardview_dark_background);
         Paint paint=new Paint();
@@ -157,5 +163,29 @@ public class home extends AppCompatActivity {
                 .setContentTitlePaint(tp)
                 .build();
 
+        sp=this.getSharedPreferences("com.nesh.waitinglounge", Context.MODE_PRIVATE);
+        mAuth=FirebaseAuth.getInstance();
+        String email=mAuth.getCurrentUser().getEmail();
+        fs.collection("Users_Clients").document(email).get()
+                .addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+                    @Override
+                    public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                        DocumentSnapshot post=task.getResult();
+                        JSONObject js=new JSONObject(post.getData());
+                        try {
+                            sp.edit().putString("Name",js.getString("Name")).commit();
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
+    }
+    public void listToken(View v){
+        Intent in=new Intent(home.this,waiting.class);
+        startActivity(in);
+    }
+    public void cancel(View v){
+        Intent in=new Intent(home.this,cancelToken.class);
+        startActivity(in);
     }
 }

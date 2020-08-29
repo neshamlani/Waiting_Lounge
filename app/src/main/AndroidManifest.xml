@@ -13,7 +13,9 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true">
-        <activity android:name=".aboutus"></activity>
+        <activity android:name=".termsandconditions"></activity>
+        <activity android:name=".waiting" />
+        <activity android:name=".aboutus" />
         <activity android:name=".cancelToken" />
         <activity android:name=".tokenGenerate" />
         <activity android:name=".services" />

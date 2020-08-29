@@ -228,8 +228,10 @@ public class tokenGenerate extends AppCompatActivity {
                 currentTime=timeFormat.format(new Date());
                 final String currentDate=dateFormat.format(new Date());
                 final String order=sp.getString("Order",null);
+                String name=sp.getString("Name",null);
                 data.clear();
                 data.put("Number",number);
+                data.put("Name",name);
                 data.put("Email",email);
                 data.put("Date",currentDate);
                 data.put("Time",currentTime);
@@ -243,11 +245,18 @@ public class tokenGenerate extends AppCompatActivity {
                                     int i;
                                     i=0;
                                     for(DocumentSnapshot post:task.getResult()){
-                                        i++;
+                                        if(post.exists()){
+                                            JSONObject js=new JSONObject(post.getData());
+                                            try{
+                                                i=Integer.parseInt(js.getString("Token"));
+                                            }catch (Exception e){}
+                                        }
+
                                     }
                                     Toast.makeText(getApplicationContext(),Integer.toString(i),Toast.LENGTH_LONG).show();
                                     data.put("Token",i+1);
                                     i=i+1;
+                                    sp.edit().putInt("token",i).commit();
                                     wait=i*waitingTime*60*1000;
                                     data.put("Property_Name",pname);
                                     fs=FirebaseFirestore.getInstance();
@@ -312,6 +321,7 @@ public class tokenGenerate extends AppCompatActivity {
                 tokenGenerate.this,
                 mCallback
         );
+
     }
     public void cancelToken(View view){
         cdt.cancel();
@@ -327,27 +337,16 @@ public class tokenGenerate extends AppCompatActivity {
             public void onComplete(@NonNull Task<Void> task) {
                 if(task.isSuccessful()){
                     Toast.makeText(getApplicationContext(),"Cancel Successful",Toast.LENGTH_LONG).show();
-                    fs.collection(pname).get()
-                            .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-                                @Override
-                                public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                                    int i=0;
-                                    for(QueryDocumentSnapshot post:task.getResult()){
-                                        i++;
-                                        Map<String, Object> data = new HashMap<>();
-                                        data.put("Token", i);
-                                        fs.collection(pname).document(post.getId()).set(data, SetOptions.merge());
-                                    }
-                                }
-                            });
                     btn.setVisibility(View.GONE);
                     tBtn.setEnabled(true);
+                    sp.edit().remove("timeleft").commit();
                     cancelSucess=1;
                 }
                 else{
                     Toast.makeText(getApplicationContext(),task.getException().getMessage(),Toast.LENGTH_LONG).show();
                     btn.setVisibility(View.GONE);
                     tBtn.setEnabled(true);
+                    sp.edit().remove("timeleft").commit();
                 }
             }
         });
@@ -390,6 +389,9 @@ public class tokenGenerate extends AppCompatActivity {
             cdt.cancel();
             timeLeft = timeLeft + System.currentTimeMillis();
             sp.edit().putLong("timeleft", timeLeft).commit();
+        }
+        else if(cancelSucess==1){
+            sp.edit().remove("timeleft").commit();
         }
     }
 }

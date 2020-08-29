@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 
 public class signup extends AppCompatActivity {
     ProgressBar pbSignup;
-    EditText signupEmail,signupPassword,signupNumber;
+    EditText signupEmail,signupPassword,signupNumber,signupName;
     FirebaseAuth mAuth;
     FirebaseFirestore fs;
     Button verifyBTN;
@@ -38,6 +38,7 @@ public class signup extends AppCompatActivity {
         pbSignup=(ProgressBar)findViewById(R.id.signupProgessBar);
         pbSignup.setVisibility(View.GONE);
         signupEmail=(EditText)findViewById(R.id.signupEmail);
+        signupName=findViewById(R.id.username);
         signupPassword=(EditText)findViewById(R.id.signupPassword);
         signupNumber=(EditText)findViewById(R.id.signupNumber);
         mAuth=FirebaseAuth.getInstance();
@@ -51,7 +52,8 @@ public class signup extends AppCompatActivity {
         final String email=signupEmail.getText().toString().trim();
         final String password=signupPassword.getText().toString().trim();
         final String number=signupNumber.getText().toString().trim();
-        if(email.isEmpty() || password.isEmpty() || password.length()<6){
+        final String name=signupName.getText().toString().trim();
+        if(email.isEmpty() || password.isEmpty() || password.length()<6 || name.isEmpty()){
             Toast.makeText(getApplicationContext(),"Enter EmailID and Password with at least 6 characters",Toast.LENGTH_SHORT).show();
             pbSignup.setVisibility(View.GONE);
         }
@@ -68,10 +70,9 @@ public class signup extends AppCompatActivity {
                                 public void onComplete(@NonNull Task<AuthResult> task) {
                                     Map<String, Object> data=new HashMap<>();
                                     data.put("Number","+91"+number);
-                                    mAuth=FirebaseAuth.getInstance();
-                                    String user=mAuth.getCurrentUser().getEmail();
-                                    data.put("Email",user);
-                                    fs.collection("Users_Clients").document(user).set(data, SetOptions.merge())
+                                    data.put("Name",name);
+                                    data.put("Email",email);
+                                    fs.collection("Users_Clients").document(email).set(data, SetOptions.merge())
                                         .addOnCompleteListener(new OnCompleteListener<Void>() {
                                             @Override
                                             public void onComplete(@NonNull Task<Void> task) {
