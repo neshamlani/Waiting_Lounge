@@ -22,7 +22,9 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.github.amlcurran.showcaseview.ShowcaseView;
@@ -50,6 +52,10 @@ public class home extends AppCompatActivity {
     FirebaseFirestore fs;
     SwipeRefreshLayout pull;
     SharedPreferences sp;
+    List<String> searches;
+    List<String> emails;
+    EditText search;
+    TextView searchResult;
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         super.onCreateOptionsMenu(menu);
@@ -104,6 +110,11 @@ public class home extends AppCompatActivity {
             ActivityCompat.requestPermissions(this,new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},2);
         }
         listView = (ListView) findViewById(R.id.listServices);
+        search=findViewById(R.id.search);
+        searchResult=findViewById(R.id.searchResult);
+        searchResult.hasOnClickListeners();
+        emails=new ArrayList<String>();
+        searches=new ArrayList<String>();
         //pull=(SwipeRefreshLayout)findViewById(R.id.pullRefresh);
         categories=new ArrayList<String>();
         categories.clear();
@@ -121,6 +132,25 @@ public class home extends AppCompatActivity {
                 startActivity(in);
             }
         });
+        fs=FirebaseFirestore.getInstance();
+        fs.collection("Shop").get()
+                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                    @Override
+                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                        if(task.isSuccessful()){
+                            for(QueryDocumentSnapshot post:task.getResult()){
+                                try{
+                                    JSONObject js=new JSONObject(post.getData());
+                                    searches.add(js.getString("Property_Name"));
+                                }catch(JSONException e){}
+                                try{
+                                    JSONObject js=new JSONObject(post.getData());
+                                    emails.add(js.getString("Email"));
+                                }catch(JSONException e){}
+                            }
+                        }
+                    }
+                });
         /*pull.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
@@ -187,5 +217,24 @@ public class home extends AppCompatActivity {
     public void cancel(View v){
         Intent in=new Intent(home.this,cancelToken.class);
         startActivity(in);
+    }
+    public void searchButton(View v){
+        final String srch=search.getText().toString().trim();
+        searchResult.setVisibility(View.VISIBLE);
+        for(int i=0;i<searches.size();i++){
+            final int j=i;
+            if(searches.get(i).equalsIgnoreCase(srch)){
+                searchResult.setText(srch);
+                searchResult.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Intent in=new Intent(home.this,tokenGenerate.class);
+                        in.putExtra("email",emails.get(j));
+                        in.putExtra("shop",searches.get(j));
+                        startActivity(in);
+                    }
+                });
+            }
+        }
     }
 }
